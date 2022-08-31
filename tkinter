@@ -1,0 +1,141 @@
+from tkinter import *
+import pickle
+from sklearn.preprocessing import OrdinalEncoder
+OE = OrdinalEncoder()
+
+valid_inputs = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D"]
+course = ('random',)
+
+with open("1_1.pkl", "rb") as file:
+    one_1 = pickle.load(file)
+with open("1_2.pkl", "rb") as file:
+    one_2 = pickle.load(file)
+with open("2_1.pkl", "rb") as file:
+    two_1 = pickle.load(file)
+with open("2_2.pkl", "rb") as file:
+    two_2 = pickle.load(file)
+
+grade_Codes = {'A+': 4.0, 'A': 4.0, 'A-': 3.7, 'B+': 3.3,
+               'B': 3.0, 'B-': 2.7, 'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'D-': 0.7, 'WU': 0, 'W': 0, 'F': 0, 'I': 0}
+
+
+def fit_transform(array):
+    for index in range(len(array)):
+        array[index] = grade_Codes[array[index]]
+    return [array]
+
+
+def generate_courses(year):
+    if year == 2:
+        fields = [f'course_{i}' for i in range(1, 12)]
+    elif year == 3:
+        fields = [f'course_{i}' for i in range(1, 23)]
+    elif year == 4:
+        fields = [f'course_{i}' for i in range(1, 34)]
+    return tuple(fields)
+
+
+def popup(msg):
+    popup = Tk()
+
+    def close_popup():
+        popup.destroy()
+    message = Label(popup, width=30, text=msg, anchor='w')
+    message.pack(side=LEFT)
+
+    ok_button = Button(popup, text='Okay',
+                       command=close_popup)
+    ok_button.pack(side=LEFT, padx=15, pady=25)
+    popup.mainloop()
+
+
+def generate_2D_array(fields, entries, model):
+    array = []
+    for course in fields:
+        course_gpa = entries[course].get()
+
+        if course_gpa in valid_inputs:
+
+            array.append(course_gpa)
+
+        else:
+            array.append("Invalid grade entered")
+
+    if "Invalid grade entered" in array:
+        popup("Please enter valid grades")
+    else:
+        if model == '1_1':
+            input_data = fit_transform(array)
+            result = one_1.predict(input_data)
+        elif model == '1_2':
+            input_data = fit_transform(array)
+            result = one_2.predict(input_data)
+        elif model == '2_1':
+            input_data = fit_transform(array)
+            result = two_1.predict(input_data)
+        else:
+            input_data = fit_transform(array)
+            result = two_2.predict(input_data)
+
+        popup(f"You expected cgpa will be {round(result[0],2)}")
+
+
+def makeform(fields, model_filename_1, model_filename_2):
+    root = Tk()
+    entries = {}
+
+    def close_form():
+        root.destroy()
+
+    for field in fields:
+        row = Frame(root)
+        lab = Label(row, width=15, text=field+": ", anchor='w')
+        ent = Entry(row)
+        ent.insert('0', "")
+        row.pack(side=TOP, fill=X, padx=5, pady=5)
+        lab.pack(side=LEFT)
+        ent.pack(side=RIGHT, expand=YES, fill=X)
+        entries[field] = ent
+    root.bind('<Return>', (lambda event, e=entries: fetch(e)))
+    predict_button_1 = Button(root, text='Predict with model 1',
+                              command=(lambda e=entries: generate_2D_array(fields, e, model_filename_1)))
+    predict_button_1.pack(side=LEFT, padx=5, pady=5)
+    predict_button_2 = Button(root, text='Predict with model 2',
+                              command=(lambda e=entries: generate_2D_array(fields, e, model_filename_2)))
+    predict_button_2.pack(side=LEFT, padx=5, pady=5)
+    quit_button = Button(root, text='Quit',
+                         command=close_form)
+    quit_button.pack(side=LEFT, padx=5, pady=5)
+    root.mainloop()
+
+
+def main():
+    home = Tk()
+
+    def close_main():
+        home.destroy()
+
+    def call_for_2nd_year():
+        courses = generate_courses(2)
+        close_main()
+        makeform(courses, "1_1", "1_2")
+
+    def call_for_3rd_year():
+        courses = generate_courses(3)
+        close_main()
+        makeform(courses, "2_1", "2_2")
+
+    year_2nd = Button(home, text='1st_year',
+                      command=call_for_2nd_year)
+    year_2nd.pack()
+
+    year_3rd = Button(home, text='2nd_year',
+                      command=call_for_3rd_year)
+    year_3rd.pack()
+
+    home.mainloop()
+
+
+if __name__ == "__main__":
+    main()
+    # print(fit_transform(["B+",'A+','B','B-']))
